@@ -19,8 +19,6 @@ type ReportPayload = {
   ok: boolean;
   range: { fromDay: string; toDay: string; timeZone: string };
   totals: { revenue: number; orders: number; gst: number };
-  golden: { slot: number; revenue: number; orders: number };
-  dead: { slot: number; revenue: number; orders: number };
   series: Array<{ t: string; revenue: number; orders: number }>;
   heatmap: { revenue: number[][]; orders: number[][] };
   weekdayCompare: { this: number[]; prev: number[] };
@@ -348,36 +346,6 @@ export default function ReportPage() {
                 <div className={styles.kpiLabel}>GST</div>
                 <div className={styles.kpiValue}>{nzd(data.totals.gst)}</div>
                 <div className={styles.kpiDesc}>Tong GST trong khoang du lieu nay.</div>
-              </div>
-              <div className={styles.kpi}>
-                <div className={styles.kpiLabel}>Peak Hour</div>
-                <div className={styles.kpiValue}>{slotLabel(data.golden.slot)}</div>
-                <div className={styles.kpiDesc}>Khung gio doanh thu cao nhat (lay tu Golden slot).</div>
-              </div>
-            </div>
-
-            <div className={styles.twoCol}>
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <div className={styles.cardTitle}>Golden slot</div>
-                    <div className={styles.cardSub}>Khung 30 phut doanh thu cao nhat (uu tien nhan su, prep).</div>
-                  </div>
-                  <div className={styles.pill}>
-                    {slotLabel(data.golden.slot)} • {nzd(data.golden.revenue)} • {data.golden.orders} orders
-                  </div>
-                </div>
-              </div>
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <div className={styles.cardTitle}>Dead slot</div>
-                    <div className={styles.cardSub}>Khung 30 phut yeu nhat (de dieu chinh ca truc).</div>
-                  </div>
-                  <div className={styles.pill}>
-                    {slotLabel(data.dead.slot)} • {nzd(data.dead.revenue)} • {data.dead.orders} orders
-                  </div>
-                </div>
               </div>
             </div>
 

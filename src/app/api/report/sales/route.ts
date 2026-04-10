@@ -134,8 +134,6 @@ export async function GET(request: Request) {
     const series: Array<{ t: string; revenue: number; orders: number }> = [];
     const heat: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 48 }, () => 0));
     const heatOrders: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 48 }, () => 0));
-    const slotTotals: number[] = Array.from({ length: 48 }, () => 0);
-    const slotOrders: number[] = Array.from({ length: 48 }, () => 0);
     const weekdayTotals: number[] = Array.from({ length: 7 }, () => 0);
     const weekdayTotalsPrev: number[] = Array.from({ length: 7 }, () => 0);
 
@@ -160,8 +158,6 @@ export async function GET(request: Request) {
       const w = (dowSun0 + 6) % 7; // 0=Mon..6=Sun
       heat[w][slot] += revenue;
       heatOrders[w][slot] += 1;
-      slotTotals[slot] += revenue;
-      slotOrders[slot] += 1;
       weekdayTotals[w] += revenue;
     }
 
@@ -184,15 +180,6 @@ export async function GET(request: Request) {
       weekdayTotalsPrev[w] += revenue;
     }
 
-    // Golden/dead slots across the selected range
-    let golden = { slot: 0, revenue: -1 };
-    let dead = { slot: 0, revenue: Number.POSITIVE_INFINITY };
-    for (let i = 0; i < 48; i++) {
-      if (slotTotals[i] > golden.revenue) golden = { slot: i, revenue: slotTotals[i] };
-      if (slotTotals[i] > 0 && slotTotals[i] < dead.revenue) dead = { slot: i, revenue: slotTotals[i] };
-    }
-    if (!Number.isFinite(dead.revenue)) dead = { slot: golden.slot, revenue: golden.revenue };
-
     return NextResponse.json({
       ok: true,
       range: { fromDay, toDay, timeZone },
@@ -201,8 +188,6 @@ export async function GET(request: Request) {
         orders: (orders ?? []).length,
         gst: nzd((orders ?? []).reduce((s, it) => s + (typeof it.total_gst === "number" ? it.total_gst : 0), 0)),
       },
-      golden: { slot: golden.slot, revenue: nzd(golden.revenue), orders: slotOrders[golden.slot] ?? 0 },
-      dead: { slot: dead.slot, revenue: nzd(dead.revenue), orders: slotOrders[dead.slot] ?? 0 },
       series,
       heatmap: { revenue: heat.map((r) => r.map(nzd)), orders: heatOrders },
       weekdayCompare: {
