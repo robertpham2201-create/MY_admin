@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Intentionally minimal global styles. Page-level styling lives in CSS modules. */
 :root {
   --background: #ffffff;
