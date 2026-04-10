@@ -1,20 +1,27 @@
 # MadamYen Admin (Next.js + Supabase)
 
-Project này đã được dọn lại để chỉ còn **Next.js admin** phục vụ:
-- Export raw `SaleHistory` theo khoảng thời gian (có phân trang / all).
-- Import (upload) raw JSON lên **Supabase**.
-- Trang **report** đọc dữ liệu từ Supabase để vẽ biểu đồ/báo cáo.
+## Setup
 
-## Dev
+1) Create `.env.local`
+- Copy `.env.example` → `.env.local`
 
-1) Vào app:
-- `cd next-admin`
-
-2) Tạo `.env.local`
-- Copy `next-admin/.env.example` → `next-admin/.env.local`
-
-3) Chạy:
+2) Install + run
 - `npm install`
 - `npm run dev`
 
-Open `http://localhost:3000/login`
+Open:
+- `http://localhost:3000/login`
+
+## Pages
+
+- `/admin/raw` export raw JSON + import lên Supabase
+- `/admin/report` xem report (đọc từ Supabase)
+
+## Auto sync 1AM (Vercel)
+
+Repo đã có `vercel.json` để Vercel Cron gọi:
+- `POST /api/cron/sync-yesterday`
+- Header: `x-cron-secret: <CRON_SECRET>`
+
+Lưu ý: Vercel cron schedule dùng UTC. Hiện đang set `0 13 * * *` (01:00 Pacific/Auckland khi NZST/UTC+12). Nếu vào NZDT (UTC+13) thì đổi sang `0 12 * * *`.
+
