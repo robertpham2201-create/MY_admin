@@ -139,7 +139,8 @@ function parseDmyAmPmToUtcIso(s: unknown): string | null {
 }
 
 async function upsertBatches(
-  supabase: ReturnType<typeof createClient>,
+  // Keep this `any` to avoid supabase-js generic inference issues in Next.js build.
+  supabase: any,
   table: string,
   rows: AnyRecord[],
   conflictTarget: string,
