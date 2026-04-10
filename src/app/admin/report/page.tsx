@@ -217,6 +217,14 @@ export default function ReportPage() {
     setMonth(monthIso(d));
   }
 
+  async function logout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -235,6 +243,9 @@ export default function ReportPage() {
             <Link className={styles.navLink} href="/admin/raw">
               Raw Export
             </Link>
+            <button className={styles.navLink} type="button" onClick={logout}>
+              Logout
+            </button>
           </nav>
         </header>
 

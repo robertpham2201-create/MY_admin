@@ -130,6 +130,14 @@ export default function RawExportPage() {
     }
   }
 
+  async function logout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -147,6 +155,9 @@ export default function RawExportPage() {
             <Link className={styles.navLink} href="/">
               Home
             </Link>
+            <button className={styles.navLink} type="button" onClick={logout}>
+              Logout
+            </button>
           </nav>
         </header>
 
