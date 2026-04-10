@@ -33,28 +33,34 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center p-6">
+    <div className="relative min-h-screen overflow-hidden bg-[#0b0f1a] text-slate-100">
+      <div className="pointer-events-none absolute inset-0 opacity-70 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(56,189,248,0.18),transparent_60%),radial-gradient(700px_420px_at_80%_25%,rgba(34,197,94,0.16),transparent_60%),radial-gradient(900px_520px_at_50%_90%,rgba(244,114,182,0.12),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07] bg-[linear-gradient(rgba(255,255,255,0.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.8)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
+          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-slate-500">MadamYen Admin</div>
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Dang nhap</h1>
-                <p className="mt-2 text-sm text-slate-600">Nhap `ADMIN_API_KEY` de truy cap dashboard.</p>
+                <div className="text-xs font-semibold tracking-widest text-slate-300/80">MY ADMIN</div>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">Sign in</h1>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                Secure
-              </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                API key
+              </span>
             </div>
 
+            <p className="mt-3 text-sm leading-relaxed text-slate-200/80">
+              Nhap <span className="font-semibold text-slate-100">ADMIN_API_KEY</span> de truy cap report va raw export.
+            </p>
+
             <div className="mt-6">
-              <label className="block text-sm font-semibold text-slate-800">API key</label>
+              <label className="block text-xs font-semibold text-slate-200/80">Admin key</label>
               <div className="mt-2">
                 <input
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none ring-0 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-400/70 outline-none ring-0 transition focus:border-white/30 focus:bg-black/40"
                   type="password"
-                  placeholder="Paste key here..."
+                  placeholder="Paste key..."
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   onKeyDown={(e) => {
@@ -65,26 +71,34 @@ export default function LoginClient() {
             </div>
 
             {error ? (
-              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <div className="mt-4 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
                 {error}
               </div>
             ) : null}
 
-            <button
-              onClick={submit}
-              disabled={loading || !apiKey}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
+            <div className="mt-6 grid gap-3">
+              <button
+                onClick={submit}
+                disabled={loading || !apiKey}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Signing in..." : "Continue"}
+              </button>
+              <a
+                href="/"
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+              >
+                Back to home
+              </a>
+            </div>
 
-            <div className="mt-4 text-xs text-slate-500">
-              Tip: tren Vercel, set `ADMIN_API_KEY` trong Environment Variables (Production).
+            <div className="mt-5 text-xs text-slate-200/70">
+              Next: <span className="font-semibold text-slate-100">{nextPath}</span>
             </div>
           </div>
 
-          <div className="mt-4 text-center text-xs text-slate-500">
-            Sau khi dang nhap, se chuyen den <span className="font-semibold text-slate-700">{nextPath}</span>.
+          <div className="mt-5 text-center text-xs text-slate-300/70">
+            Vercel env: set <span className="font-semibold text-slate-100">ADMIN_API_KEY</span> (Production).
           </div>
         </div>
       </div>
