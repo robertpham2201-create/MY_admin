@@ -18,7 +18,7 @@ export default function RawExportPage() {
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState<"all" | "50" | "100" | "200" | "500">("all");
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<unknown>(null);
+  const [preview, setPreview] = useState<unknown | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [useRpc, setUseRpc] = useState(false);
@@ -227,12 +227,12 @@ export default function RawExportPage() {
           </div>
         </section>
 
-        {preview && (
+        {preview != null ? (
           <section className={styles.preview}>
             <div className={styles.label}>Preview</div>
             <pre className={styles.pre}>{JSON.stringify(preview, null, 2)}</pre>
           </section>
-        )}
+        ) : null}
 
         <section className={styles.importPanel}>
           <div className={styles.label}>Import To Supabase</div>
