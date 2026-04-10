@@ -3,6 +3,19 @@ import { DateTime } from "luxon";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdminKey } from "@/lib/madamyen";
 
+type OrderRow = {
+  id: number;
+  created_at: string | null;
+  total_paid: number | null;
+  total_gst?: number | null;
+  total_amount_after_adjustment?: number | null;
+};
+
+type OrderItemRow = {
+  order_id: number;
+  name: string | null;
+};
+
 function addDaysIso(isoDay: string, deltaDays: number): string {
   const m = isoDay.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return isoDay;
@@ -75,7 +88,7 @@ export async function GET(request: Request) {
     const prevFromStartUtc = DateTime.fromISO(addDaysIso(fromDay, -7), { zone: timeZone }).startOf("day").toUTC().toISO();
     const prevToEndUtc = DateTime.fromISO(addDaysIso(toDay, -7), { zone: timeZone }).endOf("day").toUTC().toISO();
 
-    const orders = await fetchAllRows((from, to) =>
+    const orders = await fetchAllRows<OrderRow>((from, to) =>
       supabase
         .from("sales_orders")
         .select("id,created_at,total_paid,total_gst,total_amount_after_adjustment")
@@ -84,7 +97,7 @@ export async function GET(request: Request) {
         .range(from, to)
     );
 
-    const prevOrders = await fetchAllRows((from, to) =>
+    const prevOrders = await fetchAllRows<OrderRow>((from, to) =>
       supabase
         .from("sales_orders")
         .select("id,created_at,total_paid,total_amount_after_adjustment")
@@ -94,15 +107,15 @@ export async function GET(request: Request) {
     );
 
     const orderIds = (orders ?? []).map((o) => o.id);
-    const orderItems: Array<{ order_id: number; name: string | null }> = [];
+    const orderItems: OrderItemRow[] = [];
     if (orderIds.length) {
       const chunkSize = 500;
       for (let i = 0; i < orderIds.length; i += chunkSize) {
         const chunk = orderIds.slice(i, i + chunkSize) as number[];
-        const rows = await fetchAllRows((from, to) =>
+        const rows = await fetchAllRows<OrderItemRow>((from, to) =>
           supabase.from("sales_order_items").select("order_id,name").in("order_id", chunk).range(from, to)
         );
-        orderItems.push(...(rows as Array<{ order_id: number; name: string | null }>));
+        orderItems.push(...rows);
       }
     }
 
