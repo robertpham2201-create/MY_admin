@@ -33,14 +33,15 @@ function requireEnv(name: string): string {
 }
 
 async function fetchAllRows<T>(
-  queryFactory: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>
+  // Supabase query builders are awaitable/thenable, not plain Promise typed.
+  queryFactory: (from: number, to: number) => any
 ): Promise<T[]> {
   const pageSize = 1000;
   const out: T[] = [];
   for (let page = 0; page < 10000; page++) {
     const from = page * pageSize;
     const to = from + pageSize - 1;
-    const { data, error } = await queryFactory(from, to);
+    const { data, error } = (await queryFactory(from, to)) as { data: T[] | null; error: { message: string } | null };
     if (error) throw new Error(error.message);
     const rows = data ?? [];
     out.push(...rows);
