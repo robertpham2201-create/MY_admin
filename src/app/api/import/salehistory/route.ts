@@ -56,7 +56,8 @@ async function upsertBatches(
 ) {
   for (let i = 0; i < rows.length; i += batchSize) {
     const slice = rows.slice(i, i + batchSize);
-    const { error } = await supabase.from(table).upsert(slice, { onConflict });
+    // supabase-js typing can infer `never` for dynamic table names; runtime is fine.
+    const { error } = await (supabase as any).from(table).upsert(slice as any, { onConflict });
     if (error) throw new Error(`${table} upsert failed: ${error.message}`);
   }
 }
@@ -216,4 +217,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "internal_error", message }, { status: 500 });
   }
 }
-
