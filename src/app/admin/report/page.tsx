@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { DateTime } from "luxon";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -37,28 +38,6 @@ function isoDateLocal(d: Date) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function weekStartMonday(d: Date) {
-  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = date.getDay(); // 0=Sun..6=Sat
-  const diffToMonday = (day + 6) % 7; // Mon=0
-  date.setDate(date.getDate() - diffToMonday);
-  return date;
-}
-
-function monthIso(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function monthStartEnd(yyyyMm: string) {
-  const m = yyyyMm.match(/^(\d{4})-(\d{2})$/);
-  if (!m) throw new Error("Invalid month (expected YYYY-MM)");
-  const year = Number(m[1]);
-  const month = Number(m[2]) - 1;
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0);
-  return { start, end };
 }
 
 function slotLabel(slot: number) {
@@ -119,24 +98,78 @@ function Heatmap({ values }: { values: number[][] }) {
 
 export default function ReportPage() {
   const tz = "Pacific/Auckland";
-  const [mode, setMode] = useState<"day" | "week" | "month">("day");
-  const [day, setDay] = useState(() => isoDateLocal(new Date()));
-  const [weekStart, setWeekStart] = useState(() => isoDateLocal(weekStartMonday(new Date())));
-  const [month, setMonth] = useState(() => monthIso(new Date()));
+
+  type RangePreset =
+    | "yesterday"
+    | "today"
+    | "this_week"
+    | "last_week"
+    | "this_month"
+    | "last_month"
+    | "this_year"
+    | "last_year"
+    | "custom";
+
+  const [preset, setPreset] = useState<RangePreset>("yesterday");
+  const [customFrom, setCustomFrom] = useState(() => isoDateLocal(new Date()));
+  const [customTo, setCustomTo] = useState(() => isoDateLocal(new Date()));
+
   const [data, setData] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(false);
 
   const range = useMemo(() => {
-    if (mode === "day") return { fromDay: day, toDay: day };
-    if (mode === "week") {
-      const start = new Date(weekStart + "T00:00:00");
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      return { fromDay: isoDateLocal(start), toDay: isoDateLocal(end) };
+    const now = DateTime.now().setZone(tz);
+
+    const startOfWeek = (dt: DateTime) => dt.startOf("day").minus({ days: dt.weekday - 1 }); // Mon..Sun
+    const endOfWeek = (dt: DateTime) => startOfWeek(dt).plus({ days: 6 });
+
+    if (preset === "yesterday") {
+      const d = now.minus({ days: 1 }).startOf("day");
+      const iso = d.toISODate()!;
+      return { fromDay: iso, toDay: iso };
     }
-    const { start, end } = monthStartEnd(month);
-    return { fromDay: isoDateLocal(start), toDay: isoDateLocal(end) };
-  }, [mode, day, weekStart, month]);
+    if (preset === "today") {
+      const d = now.startOf("day");
+      const iso = d.toISODate()!;
+      return { fromDay: iso, toDay: iso };
+    }
+    if (preset === "this_week") {
+      const s = startOfWeek(now);
+      const e = endOfWeek(now);
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+    if (preset === "last_week") {
+      const base = now.minus({ weeks: 1 });
+      const s = startOfWeek(base);
+      const e = endOfWeek(base);
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+    if (preset === "this_month") {
+      const s = now.startOf("month");
+      const e = now.endOf("month").startOf("day");
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+    if (preset === "last_month") {
+      const base = now.minus({ months: 1 });
+      const s = base.startOf("month");
+      const e = base.endOf("month").startOf("day");
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+    if (preset === "this_year") {
+      const s = now.startOf("year");
+      const e = now.endOf("year").startOf("day");
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+    if (preset === "last_year") {
+      const base = now.minus({ years: 1 });
+      const s = base.startOf("year");
+      const e = base.endOf("year").startOf("day");
+      return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
+    }
+
+    // custom
+    return { fromDay: customFrom, toDay: customTo };
+  }, [preset, customFrom, customTo, tz]);
 
   const weekdayBars = useMemo(() => {
     if (!data) return [];
@@ -148,7 +181,7 @@ export default function ReportPage() {
     }));
   }, [data]);
 
-  async function fetchReport() {
+  const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
       const qp = new URLSearchParams({ ...range, timeZone: tz });
@@ -158,7 +191,13 @@ export default function ReportPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [range, tz]);
+
+  useEffect(() => {
+    // Default: generate report for yesterday on first load.
+    fetchReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function exportRawJson() {
     const qp = new URLSearchParams({ ...range, timeZone: tz, all: "1" });
@@ -199,24 +238,6 @@ export default function ReportPage() {
     URL.revokeObjectURL(url);
   }
 
-  function bumpDay(delta: number) {
-    const d = new Date(day + "T00:00:00");
-    d.setDate(d.getDate() + delta);
-    setDay(isoDateLocal(d));
-  }
-
-  function bumpWeek(deltaWeeks: number) {
-    const d = new Date(weekStart + "T00:00:00");
-    d.setDate(d.getDate() + deltaWeeks * 7);
-    setWeekStart(isoDateLocal(d));
-  }
-
-  function bumpMonth(deltaMonths: number) {
-    const d = new Date(month + "-01T00:00:00");
-    d.setMonth(d.getMonth() + deltaMonths);
-    setMonth(monthIso(d));
-  }
-
   async function logout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -252,69 +273,45 @@ export default function ReportPage() {
         <section className={styles.panel}>
           <div className={styles.panelRow}>
             <div className={styles.modeGroup}>
-              <button
-                className={`${styles.segButton} ${mode === "day" ? styles.segButtonActive : ""}`}
-                onClick={() => setMode("day")}
-                type="button"
+              <select
+                className={styles.segButton}
+                value={preset}
+                onChange={(e) => setPreset(e.target.value as RangePreset)}
+                aria-label="Range preset"
               >
-                Day
-              </button>
-              <button
-                className={`${styles.segButton} ${mode === "week" ? styles.segButtonActive : ""}`}
-                onClick={() => setMode("week")}
-                type="button"
-              >
-                Week
-              </button>
-              <button
-                className={`${styles.segButton} ${mode === "month" ? styles.segButtonActive : ""}`}
-                onClick={() => setMode("month")}
-                type="button"
-              >
-                Month
-              </button>
+                <option value="yesterday">Yesterday</option>
+                <option value="today">Today</option>
+                <option value="this_week">This week (Mon-Sun)</option>
+                <option value="last_week">Last week (Mon-Sun)</option>
+                <option value="this_month">This month</option>
+                <option value="last_month">Last month</option>
+                <option value="this_year">This year</option>
+                <option value="last_year">Last year</option>
+                <option value="custom">Custom range</option>
+              </select>
+
+              {preset === "custom" ? (
+                <div className={styles.modeGroup}>
+                  <input
+                    className={`${styles.segButton} ${styles.dateInput}`}
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    aria-label="From day"
+                  />
+                  <span style={{ color: "#64748b", fontWeight: 800 }}>→</span>
+                  <input
+                    className={`${styles.segButton} ${styles.dateInput}`}
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    aria-label="To day"
+                  />
+                </div>
+              ) : null}
             </div>
             <div className={styles.rangePill}>
               Range: {range.fromDay} → {range.toDay}
-            </div>
-          </div>
-
-          <div className={styles.pickGrid}>
-            <div className={styles.pickCard}>
-              <div className={styles.pickLabel}>Day</div>
-              <div className={styles.pickRow}>
-                <button className={styles.pillButton} type="button" onClick={() => bumpDay(-1)}>
-                  ←
-                </button>
-                <div className={styles.pillValue}>{day}</div>
-                <button className={styles.pillButton} type="button" onClick={() => bumpDay(1)}>
-                  →
-                </button>
-              </div>
-            </div>
-            <div className={styles.pickCard}>
-              <div className={styles.pickLabel}>Week (Mon)</div>
-              <div className={styles.pickRow}>
-                <button className={styles.pillButton} type="button" onClick={() => bumpWeek(-1)}>
-                  ←
-                </button>
-                <div className={styles.pillValue}>{weekStart}</div>
-                <button className={styles.pillButton} type="button" onClick={() => bumpWeek(1)}>
-                  →
-                </button>
-              </div>
-            </div>
-            <div className={styles.pickCard}>
-              <div className={styles.pickLabel}>Month</div>
-              <div className={styles.pickRow}>
-                <button className={styles.pillButton} type="button" onClick={() => bumpMonth(-1)}>
-                  ←
-                </button>
-                <div className={styles.pillValue}>{month}</div>
-                <button className={styles.pillButton} type="button" onClick={() => bumpMonth(1)}>
-                  →
-                </button>
-              </div>
             </div>
           </div>
 
