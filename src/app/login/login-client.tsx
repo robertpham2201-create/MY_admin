@@ -52,32 +52,10 @@ export default function LoginClient() {
         <section className="relative hidden overflow-hidden bg-[#e1e3e4] lg:block lg:w-3/5">
           <img
             alt="Restaurant interior"
-            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80"
+            src="/login-hero.png"
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#002114]/45 via-[#002114]/10 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-16 text-white">
-            <div className="max-w-xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/75">The Culinary Atelier</p>
-              <h2
-                className="mt-4 text-5xl font-extrabold tracking-[-0.03em] text-white"
-                style={{ fontFamily: "var(--font-login-headline)" }}
-              >
-                Internal access for a calm, premium service flow.
-              </h2>
-              <p className="mt-5 max-w-lg text-sm leading-7 text-white/80">
-                Report, raw export, and operational insights stay in one place with a workspace that feels closer to a studio than a spreadsheet.
-              </p>
-            </div>
-          </div>
-          <div className="pointer-events-none absolute bottom-8 left-10 opacity-15">
-            <span
-              className="select-none text-[120px] font-black italic tracking-[-0.06em] text-white"
-              style={{ fontFamily: "var(--font-login-headline)" }}
-            >
-              ATELIER
-            </span>
-          </div>
         </section>
 
         <section className="relative flex w-full items-center justify-center bg-[#f8f9fa] lg:w-2/5">
@@ -91,7 +69,7 @@ export default function LoginClient() {
                 className="text-[2.5rem] font-extrabold tracking-[-0.03em] text-[#191c1d]"
                 style={{ fontFamily: "var(--font-login-headline)" }}
               >
-                Personnel Access
+                Madam Yen
               </h1>
               <p className="mt-3 text-sm leading-7 text-[#3d4a42]">
                 Enter your unique service code to proceed to the workspace.
@@ -105,7 +83,22 @@ export default function LoginClient() {
                 </label>
                 <div className="group relative">
                   <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#6d7a72]">
-                    <span className="text-base">key</span>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 10.5a6.5 6.5 0 1 1-11.6-4" />
+                      <path d="M21 10.5h-6" />
+                      <path d="M15 10.5v3" />
+                      <path d="M12 13.5v2" />
+                      <path d="M9.4 6.5 3 12.9V17h4.1l2.5-2.5" />
+                    </svg>
                   </div>
                   <input
                     id="access-code"
