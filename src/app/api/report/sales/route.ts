@@ -86,7 +86,7 @@ export async function GET(request: Request) {
         p_to_day: toDay,
         p_time_zone: timeZone,
       }),
-      rangeDays > 27
+      rangeDays >= 7
         ? (supabase as any).rpc("report_goods_momentum", {
             p_from_day: fromDay,
             p_to_day: toDay,
