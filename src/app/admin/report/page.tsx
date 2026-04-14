@@ -19,6 +19,27 @@ type ReportPayload = {
   range: { fromDay: string; toDay: string; timeZone: string };
   totals: { revenue: number; orders: number; gst: number };
   series: Array<{ t: string; revenue: number; orders: number }>;
+  goodsMomentum: null | {
+    filterScope: "main_only";
+    currentLabel: string;
+    previousLabel: string;
+    fastest: Array<{
+      name: string;
+      currentQty: number;
+      previousQty: number;
+      deltaQty: number;
+      deltaPct: number | null;
+      status: "up" | "down" | "new" | "dropped";
+    }>;
+    slowest: Array<{
+      name: string;
+      currentQty: number;
+      previousQty: number;
+      deltaQty: number;
+      deltaPct: number | null;
+      status: "up" | "down" | "new" | "dropped";
+    }>;
+  };
 };
 
 function nzd(value: number) {
@@ -34,6 +55,16 @@ function isoDateLocal(d: Date) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function pctText(value: number | null) {
+  if (value == null) return "New";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(1)}%`;
+}
+
+function qtyText(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 export default function ReportPage() {
@@ -145,7 +176,7 @@ export default function ReportPage() {
             <div className={styles.badge}>Operations Intelligence</div>
             <h1 className={styles.title}>Restaurant Report</h1>
             <p className={styles.subtitle}>
-              Tong hop doanh thu theo tung moc 30 phut. Tat ca tinh toan o server. TZ {tz}.
+              Tong hop doanh thu theo tung moc 30 phut va xu huong ban hang theo ky. TZ {tz}.
             </p>
           </div>
           <nav className={styles.nav}>
@@ -271,6 +302,78 @@ export default function ReportPage() {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {data.goodsMomentum ? (
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <div className={styles.cardTitle}>Mon ban nhanh / cham hon ky truoc</div>
+                    <div className={styles.cardSub}>
+                      So sanh tong so luong ban trong ky hien tai voi ky truoc cung do dai. Chi tinh mon chinh, bo side, extra va takeaway box.
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.compareMeta}>
+                  <span className={styles.comparePill}>Current: {data.goodsMomentum.currentLabel}</span>
+                  <span className={styles.comparePill}>Previous: {data.goodsMomentum.previousLabel}</span>
+                </div>
+
+                <div className={styles.momentumGrid}>
+                  <div className={styles.momentumPanel}>
+                    <div className={styles.momentumTitle}>Ban nhanh hon ky truoc</div>
+                    <div className={styles.momentumTable}>
+                      <div className={styles.momentumHead}>
+                        <span>Mon</span>
+                        <span>Qty</span>
+                        <span>Prev</span>
+                        <span>Delta</span>
+                      </div>
+                      {data.goodsMomentum.fastest.length ? (
+                        data.goodsMomentum.fastest.map((item) => (
+                          <div key={`fast-${item.name}`} className={styles.momentumRow}>
+                            <span className={styles.itemName}>{item.name}</span>
+                            <span>{qtyText(item.currentQty)}</span>
+                            <span>{qtyText(item.previousQty)}</span>
+                            <span className={styles.positiveDelta}>
+                              +{qtyText(item.deltaQty)} · {pctText(item.deltaPct)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.emptyTable}>Khong co mon tang toc trong ky nay.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.momentumPanel}>
+                    <div className={styles.momentumTitle}>Ban cham hon ky truoc</div>
+                    <div className={styles.momentumTable}>
+                      <div className={styles.momentumHead}>
+                        <span>Mon</span>
+                        <span>Qty</span>
+                        <span>Prev</span>
+                        <span>Delta</span>
+                      </div>
+                      {data.goodsMomentum.slowest.length ? (
+                        data.goodsMomentum.slowest.map((item) => (
+                          <div key={`slow-${item.name}`} className={styles.momentumRow}>
+                            <span className={styles.itemName}>{item.name}</span>
+                            <span>{qtyText(item.currentQty)}</span>
+                            <span>{qtyText(item.previousQty)}</span>
+                            <span className={styles.negativeDelta}>
+                              {qtyText(item.deltaQty)} · {pctText(item.deltaPct)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.emptyTable}>Khong co mon giam toc trong ky nay.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </section>
         )}
       </div>

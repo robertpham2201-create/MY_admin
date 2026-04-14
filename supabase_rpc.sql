@@ -191,3 +191,233 @@ begin
 end;
 $$;
 
+create or replace function public.is_main_category_item(p_name text, p_variant_name text default null)
+returns boolean
+language sql
+immutable
+as $$
+  with normalized as (
+    select lower(trim(regexp_replace(coalesce(p_name, '') || ' ' || coalesce(p_variant_name, ''), '\s+', ' ', 'g'))) as v
+  )
+  select case
+    when v = '' then false
+    when trim(coalesce(p_name, '')) = '' then false
+    when lower(trim(coalesce(p_name, ''))) in (
+      'takeaway box',
+      'take away box',
+      'takeaway container',
+      'extra 3',
+      'extra meat',
+      'side rice',
+      'side noodles'
+    ) then false
+    when v ~ '\mextra\M' then false
+    when v ~ '\mside\M' then false
+    when v ~ 'take\s*away' then false
+    when v ~ 'takeaway' then false
+    when v ~ '\mbox\M' then false
+    when v ~ '\mcontainer\M' then false
+    when v ~ '\mpack(?:aging)?\M' then false
+    when v ~ '\mbag\M' then false
+    when v ~ '\madd[\s-]?on\M' then false
+    else true
+  end
+  from normalized;
+$$;
+
+create or replace function public.report_sales_summary(
+  p_from_day date,
+  p_to_day date,
+  p_time_zone text default 'Pacific/Auckland'
+)
+returns jsonb
+language sql
+stable
+as $$
+  with filtered_orders as (
+    select
+      o.id,
+      o.created_at,
+      coalesce(o.total_paid, o.total_amount_after_adjustment, 0)::numeric as revenue,
+      coalesce(o.total_gst, 0)::numeric as gst,
+      timezone(p_time_zone, o.created_at) as local_created_at
+    from public.sales_orders o
+    where o.created_at is not null
+      and coalesce(o.voided, false) = false
+      and timezone(p_time_zone, o.created_at)::date between p_from_day and p_to_day
+  ),
+  series_rows as (
+    select
+      to_char(
+        date_trunc('hour', local_created_at)
+        + case when extract(minute from local_created_at) >= 30 then interval '30 minutes' else interval '0 minutes' end,
+        'YYYY-MM-DD HH24:MI'
+      ) as t,
+      round(sum(revenue)::numeric, 2) as revenue,
+      count(*)::int as orders
+    from filtered_orders
+    group by 1
+    order by 1
+  ),
+  totals as (
+    select
+      round(coalesce(sum(revenue), 0)::numeric, 2) as revenue,
+      count(*)::int as orders,
+      round(coalesce(sum(gst), 0)::numeric, 2) as gst
+    from filtered_orders
+  )
+  select jsonb_build_object(
+    'totals',
+    (
+      select jsonb_build_object(
+        'revenue', revenue,
+        'orders', orders,
+        'gst', gst
+      )
+      from totals
+    ),
+    'series',
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            't', t,
+            'revenue', revenue,
+            'orders', orders
+          )
+          order by t
+        )
+        from series_rows
+      ),
+      '[]'::jsonb
+    )
+  );
+$$;
+
+create or replace function public.report_goods_momentum(
+  p_from_day date,
+  p_to_day date,
+  p_time_zone text default 'Pacific/Auckland'
+)
+returns jsonb
+language sql
+stable
+as $$
+  with settings as (
+    select
+      p_from_day as from_day,
+      p_to_day as to_day,
+      ((p_to_day - p_from_day) + 1)::int as range_days,
+      (p_from_day - ((p_to_day - p_from_day) + 1))::date as previous_from_day,
+      (p_from_day - 1)::date as previous_to_day
+  ),
+  current_items as (
+    select
+      trim(i.name) as name,
+      round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
+    from public.sales_order_items i
+    join public.sales_orders o on o.id = i.order_id
+    cross join settings s
+    where o.created_at is not null
+      and coalesce(o.voided, false) = false
+      and timezone(p_time_zone, o.created_at)::date between s.from_day and s.to_day
+      and public.is_main_category_item(i.name, i.variant_name)
+    group by trim(i.name)
+  ),
+  previous_items as (
+    select
+      trim(i.name) as name,
+      round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
+    from public.sales_order_items i
+    join public.sales_orders o on o.id = i.order_id
+    cross join settings s
+    where o.created_at is not null
+      and coalesce(o.voided, false) = false
+      and timezone(p_time_zone, o.created_at)::date between s.previous_from_day and s.previous_to_day
+      and public.is_main_category_item(i.name, i.variant_name)
+    group by trim(i.name)
+  ),
+  combined as (
+    select
+      coalesce(c.name, p.name) as name,
+      coalesce(c.qty, 0)::numeric as current_qty,
+      coalesce(p.qty, 0)::numeric as previous_qty
+    from current_items c
+    full outer join previous_items p on p.name = c.name
+  ),
+  ranked as (
+    select
+      name,
+      round(current_qty, 2) as current_qty,
+      round(previous_qty, 2) as previous_qty,
+      round(current_qty - previous_qty, 2) as delta_qty,
+      case
+        when previous_qty > 0 then round((((current_qty - previous_qty) / previous_qty) * 100)::numeric, 1)
+        when current_qty > 0 then null
+        else -100::numeric
+      end as delta_pct,
+      case
+        when previous_qty = 0 and current_qty > 0 then 'new'
+        when current_qty = 0 and previous_qty > 0 then 'dropped'
+        when current_qty - previous_qty > 0 then 'up'
+        else 'down'
+      end as status
+    from combined
+    where current_qty <> previous_qty
+  ),
+  fastest as (
+    select *
+    from ranked
+    where delta_qty > 0
+    order by coalesce(delta_pct, 999999) desc, delta_qty desc, name asc
+    limit 10
+  ),
+  slowest as (
+    select *
+    from ranked
+    where delta_qty < 0
+    order by coalesce(delta_pct, -100) asc, delta_qty asc, name asc
+    limit 10
+  )
+  select jsonb_build_object(
+    'filterScope', 'main_only',
+    'currentLabel', (select from_day::text || ' → ' || to_day::text from settings),
+    'previousLabel', (select previous_from_day::text || ' → ' || previous_to_day::text from settings),
+    'fastest',
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'name', name,
+            'currentQty', current_qty,
+            'previousQty', previous_qty,
+            'deltaQty', delta_qty,
+            'deltaPct', delta_pct,
+            'status', status
+          )
+          order by coalesce(delta_pct, 999999) desc, delta_qty desc, name asc
+        )
+        from fastest
+      ),
+      '[]'::jsonb
+    ),
+    'slowest',
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'name', name,
+            'currentQty', current_qty,
+            'previousQty', previous_qty,
+            'deltaQty', delta_qty,
+            'deltaPct', delta_pct,
+            'status', status
+          )
+          order by coalesce(delta_pct, -100) asc, delta_qty asc, name asc
+        )
+        from slowest
+      ),
+      '[]'::jsonb
+    )
+  );
+$$;

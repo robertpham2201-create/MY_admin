@@ -41,6 +41,7 @@ create table if not exists public.sales_orders (
 create index if not exists idx_sales_orders_created_at on public.sales_orders (created_at);
 create index if not exists idx_sales_orders_staff on public.sales_orders (staff);
 create index if not exists idx_sales_orders_voided on public.sales_orders (voided);
+create index if not exists idx_sales_orders_voided_created_at on public.sales_orders (voided, created_at);
 
 create table if not exists public.sales_order_items (
   line_id bigint primary key,
@@ -64,6 +65,7 @@ create table if not exists public.sales_order_items (
 
 create index if not exists idx_sales_order_items_order_id on public.sales_order_items (order_id);
 create index if not exists idx_sales_order_items_product_id on public.sales_order_items (product_id);
+create index if not exists idx_sales_order_items_name on public.sales_order_items (name);
 
 create table if not exists public.sales_transactions (
   id bigint primary key,
@@ -97,4 +99,3 @@ drop trigger if exists trg_sales_orders_updated_at on public.sales_orders;
 create trigger trg_sales_orders_updated_at
 before update on public.sales_orders
 for each row execute function public.set_updated_at();
-

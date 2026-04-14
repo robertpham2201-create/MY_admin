@@ -3,36 +3,40 @@ import { DateTime } from "luxon";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdminKey } from "@/lib/madamyen";
 
-type OrderRow = {
-  id: number;
-  created_at: string | null;
-  total_paid: number | null;
-  total_gst?: number | null;
-  total_amount_after_adjustment?: number | null;
+type SalesSummaryRpc = {
+  totals?: {
+    revenue?: number;
+    orders?: number;
+    gst?: number;
+  };
+  series?: Array<{
+    t: string;
+    revenue: number;
+    orders: number;
+  }>;
 };
 
-function addDaysIso(isoDay: string, deltaDays: number): string {
-  const m = isoDay.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return isoDay;
-  const yyyy = Number(m[1]);
-  const mm = Number(m[2]) - 1;
-  const dd = Number(m[3]);
-  const d = new Date(Date.UTC(yyyy, mm, dd));
-  d.setUTCDate(d.getUTCDate() + deltaDays);
-  const y = d.getUTCFullYear();
-  const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const da = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${mo}-${da}`;
-}
-
-function slot30m(hour: number, min: number) {
-  const half = min >= 30 ? 1 : 0;
-  return hour * 2 + half; // 0..47
-}
-
-function nzd(value: number) {
-  return Math.round(value * 100) / 100;
-}
+type GoodsMomentumRpc = {
+  filterScope: "main_only";
+  currentLabel: string;
+  previousLabel: string;
+  fastest: Array<{
+    name: string;
+    currentQty: number;
+    previousQty: number;
+    deltaQty: number;
+    deltaPct: number | null;
+    status: "up" | "down" | "new" | "dropped";
+  }>;
+  slowest: Array<{
+    name: string;
+    currentQty: number;
+    previousQty: number;
+    deltaQty: number;
+    deltaPct: number | null;
+    status: "up" | "down" | "new" | "dropped";
+  }>;
+};
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -40,22 +44,18 @@ function requireEnv(name: string): string {
   return v;
 }
 
-async function fetchAllRows<T>(
-  // Supabase query builders are awaitable/thenable, not plain Promise typed.
-  queryFactory: (from: number, to: number) => any
-): Promise<T[]> {
-  const pageSize = 1000;
-  const out: T[] = [];
-  for (let page = 0; page < 10000; page++) {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-    const { data, error } = (await queryFactory(from, to)) as { data: T[] | null; error: { message: string } | null };
-    if (error) throw new Error(error.message);
-    const rows = data ?? [];
-    out.push(...rows);
-    if (rows.length < pageSize) break;
-  }
-  return out;
+function normalizeMoney(value: unknown) {
+  const num = typeof value === "number" ? value : Number(value ?? 0);
+  return Math.round(num * 100) / 100;
+}
+
+function normalizeSeries(payload: SalesSummaryRpc | null | undefined) {
+  const series = Array.isArray(payload?.series) ? payload.series : [];
+  return series.map((point) => ({
+    t: String(point.t ?? ""),
+    revenue: normalizeMoney(point.revenue),
+    orders: Number(point.orders ?? 0),
+  }));
 }
 
 export async function GET(request: Request) {
@@ -72,59 +72,45 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, error: "bad_request", message: "Missing fromDay/toDay (YYYY-MM-DD)" }, { status: 400 });
     }
 
-    // Supabase-backed: query normalized tables
+    const fromDate = DateTime.fromISO(fromDay, { zone: timeZone }).startOf("day");
+    const toDate = DateTime.fromISO(toDay, { zone: timeZone }).endOf("day");
+    const rangeDays = Math.floor(toDate.startOf("day").diff(fromDate.startOf("day"), "days").days) + 1;
+
     const supabaseUrl = requireEnv("SUPABASE_URL");
     const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
-    const fromStartUtc = DateTime.fromISO(fromDay, { zone: timeZone }).startOf("day").toUTC().toISO();
-    const toEndUtc = DateTime.fromISO(toDay, { zone: timeZone }).endOf("day").toUTC().toISO();
+    const [{ data: summaryData, error: summaryError }, { data: momentumData, error: momentumError }] = await Promise.all([
+      (supabase as any).rpc("report_sales_summary", {
+        p_from_day: fromDay,
+        p_to_day: toDay,
+        p_time_zone: timeZone,
+      }),
+      rangeDays > 27
+        ? (supabase as any).rpc("report_goods_momentum", {
+            p_from_day: fromDay,
+            p_to_day: toDay,
+            p_time_zone: timeZone,
+          })
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
-    const orders = await fetchAllRows<OrderRow>((from, to) =>
-      supabase
-        .from("sales_orders")
-        .select("id,created_at,total_paid,total_gst,total_amount_after_adjustment")
-        .gte("created_at", fromStartUtc)
-        .lte("created_at", toEndUtc)
-        .range(from, to)
-    );
+    if (summaryError) throw new Error(summaryError.message);
+    if (momentumError) throw new Error(momentumError.message);
 
-    // 30-minute time-series
-    const series: Array<{ t: string; revenue: number; orders: number }> = [];
-
-    const byKey = new Map<string, { revenue: number; orders: number }>();
-    for (const it of orders ?? []) {
-      const createdAtIso = typeof it.created_at === "string" ? it.created_at : null;
-      if (!createdAtIso) continue;
-      const dt = DateTime.fromISO(createdAtIso, { zone: "utc" }).setZone(timeZone);
-      const dayKey = dt.toFormat("yyyy-LL-dd");
-      const slot = slot30m(dt.hour, dt.minute);
-      const k = `${dayKey} ${dt.toFormat("HH")}:${dt.minute < 30 ? "00" : "30"}`;
-      const revenue =
-        (typeof it.total_paid === "number" ? it.total_paid : 0) ||
-        (typeof it.total_amount_after_adjustment === "number" ? it.total_amount_after_adjustment : 0) ||
-        0;
-      const cur = byKey.get(k) ?? { revenue: 0, orders: 0 };
-      cur.revenue += revenue;
-      cur.orders += 1;
-      byKey.set(k, cur);
-    }
-
-    const keysSorted = Array.from(byKey.keys()).sort();
-    for (const k of keysSorted) {
-      const v = byKey.get(k)!;
-      series.push({ t: k, revenue: nzd(v.revenue), orders: v.orders });
-    }
+    const summary = (summaryData ?? {}) as SalesSummaryRpc;
+    const goodsMomentum = (momentumData ?? null) as GoodsMomentumRpc | null;
 
     return NextResponse.json({
       ok: true,
       range: { fromDay, toDay, timeZone },
       totals: {
-        revenue: nzd((orders ?? []).reduce((s, it) => s + (typeof it.total_paid === "number" ? it.total_paid : 0), 0)),
-        orders: (orders ?? []).length,
-        gst: nzd((orders ?? []).reduce((s, it) => s + (typeof it.total_gst === "number" ? it.total_gst : 0), 0)),
+        revenue: normalizeMoney(summary.totals?.revenue),
+        orders: Number(summary.totals?.orders ?? 0),
+        gst: normalizeMoney(summary.totals?.gst),
       },
-      series,
+      series: normalizeSeries(summary),
+      goodsMomentum,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

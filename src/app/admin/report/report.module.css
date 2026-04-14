@@ -261,6 +261,12 @@
   filter: brightness(1.02);
 }
 
+.cta:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .helper {
   flex: 1;
   min-width: 220px;
@@ -283,6 +289,97 @@
   margin-top: 16px;
   display: grid;
   gap: 14px;
+}
+
+.compareMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.comparePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.momentumGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.momentumPanel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(248, 250, 252, 0.82);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.momentumTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.momentumTable {
+  display: grid;
+  gap: 8px;
+}
+
+.momentumHead,
+.momentumRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) 72px 72px 100px;
+  gap: 10px;
+  align-items: center;
+}
+
+.momentumHead {
+  color: #64748b;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.momentumRow {
+  font-size: 13px;
+  color: #0f172a;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.itemName {
+  font-weight: 700;
+  color: #111827;
+}
+
+.positiveDelta {
+  font-weight: 800;
+  color: #047857;
+}
+
+.negativeDelta {
+  font-weight: 800;
+  color: #b91c1c;
+}
+
+.emptyTable {
+  padding: 12px 0 4px;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .kpiGrid {
@@ -460,6 +557,9 @@
     grid-template-columns: 1fr;
   }
   .twoCol {
+    grid-template-columns: 1fr;
+  }
+  .momentumGrid {
     grid-template-columns: 1fr;
   }
 }
