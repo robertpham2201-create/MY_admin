@@ -129,45 +129,6 @@ export default function ReportPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function exportRawJson() {
-    const qp = new URLSearchParams({ ...range, timeZone: tz, all: "1" });
-    const res = await fetch(`/api/raw/sale-history?${qp.toString()}`);
-    const text = await res.text();
-    if (!res.ok) {
-      // If something goes wrong, at least surface the error payload.
-      alert(text || `Export failed (HTTP ${res.status})`);
-      return;
-    }
-
-    const blob = new Blob([text], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `salehistory_raw_${range.fromDay}_${range.toDay}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function exportJson() {
-    if (!data) return;
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      range,
-      report: data,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `restaurant-report_${range.fromDay}_${range.toDay}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
   async function logout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -184,7 +145,7 @@ export default function ReportPage() {
             <div className={styles.badge}>Operations Intelligence</div>
             <h1 className={styles.title}>Restaurant Report</h1>
             <p className={styles.subtitle}>
-              Tong hop nhip doanh thu theo tung 30 phut, so sanh theo thu, phan tich mon va hanh vi mua hang. Tat ca tinh toan o server. TZ {tz}.
+              Tong hop doanh thu theo tung moc 30 phut. Tat ca tinh toan o server. TZ {tz}.
             </p>
           </div>
           <nav className={styles.nav}>
@@ -249,15 +210,6 @@ export default function ReportPage() {
             <button className={styles.cta} type="button" onClick={fetchReport} disabled={loading}>
               {loading ? "Analyzing..." : "Generate report"}
             </button>
-            <button className={styles.ctaSecondary} type="button" onClick={exportJson} disabled={!data || loading}>
-              Export JSON
-            </button>
-            <button className={styles.ctaTertiary} type="button" onClick={exportRawJson} disabled={loading}>
-              Export Raw JSON
-            </button>
-            <div className={styles.helper}>
-              Goi API `/api/report/sales` de fetch SaleHistory (tat ca pages) va tong hop theo khung 30 phut.
-            </div>
           </div>
         </section>
 
