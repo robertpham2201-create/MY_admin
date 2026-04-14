@@ -24,7 +24,6 @@ type ReportPayload = {
     currentLabel: string;
     previousLabel: string;
     fastest: Array<{
-      productId?: number;
       name: string;
       currentQty: number;
       previousQty: number;
@@ -33,7 +32,6 @@ type ReportPayload = {
       status: "up" | "down" | "new" | "dropped";
     }>;
     slowest: Array<{
-      productId?: number;
       name: string;
       currentQty: number;
       previousQty: number;
@@ -67,11 +65,6 @@ function pctText(value: number | null) {
 
 function qtyText(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
-function itemLabel(item: { name: string; productId?: number }) {
-  const id = typeof item.productId === "number" && Number.isFinite(item.productId) ? ` (${item.productId})` : "";
-  return `${item.name}${id}`;
 }
 
 export default function ReportPage() {
@@ -338,8 +331,8 @@ export default function ReportPage() {
                       </div>
                       {data.goodsMomentum.fastest.length ? (
                         data.goodsMomentum.fastest.map((item) => (
-                          <div key={`fast-${item.productId ?? item.name}`} className={styles.momentumRow}>
-                            <span className={styles.itemName}>{itemLabel(item)}</span>
+                          <div key={`fast-${item.name}`} className={styles.momentumRow}>
+                            <span className={styles.itemName}>{item.name}</span>
                             <span>{qtyText(item.currentQty)}</span>
                             <span>{qtyText(item.previousQty)}</span>
                             <span className={styles.positiveDelta}>
@@ -364,8 +357,8 @@ export default function ReportPage() {
                       </div>
                       {data.goodsMomentum.slowest.length ? (
                         data.goodsMomentum.slowest.map((item) => (
-                          <div key={`slow-${item.productId ?? item.name}`} className={styles.momentumRow}>
-                            <span className={styles.itemName}>{itemLabel(item)}</span>
+                          <div key={`slow-${item.name}`} className={styles.momentumRow}>
+                            <span className={styles.itemName}>{item.name}</span>
                             <span>{qtyText(item.currentQty)}</span>
                             <span>{qtyText(item.previousQty)}</span>
                             <span className={styles.negativeDelta}>

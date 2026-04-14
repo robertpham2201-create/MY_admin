@@ -317,12 +317,7 @@ as $$
   ),
   current_items as (
     select
-      i.product_id as product_id,
-      coalesce(
-        nullif(max(trim(i.variant_name)), ''),
-        nullif(max(trim(i.name)), ''),
-        'Unknown'
-      ) as name,
+      trim(coalesce(nullif(i.variant_name, ''), i.name, 'Unknown')) as name,
       round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
     from public.sales_order_items i
     join public.sales_orders o on o.id = i.order_id
@@ -331,17 +326,11 @@ as $$
       and coalesce(o.voided, false) = false
       and timezone(p_time_zone, o.created_at)::date between s.from_day and s.to_day
       and public.is_main_category_item(i.name, i.variant_name)
-      and i.product_id is not null
-    group by i.product_id
+    group by trim(coalesce(nullif(i.variant_name, ''), i.name, 'Unknown'))
   ),
   previous_items as (
     select
-      i.product_id as product_id,
-      coalesce(
-        nullif(max(trim(i.variant_name)), ''),
-        nullif(max(trim(i.name)), ''),
-        'Unknown'
-      ) as name,
+      trim(coalesce(nullif(i.variant_name, ''), i.name, 'Unknown')) as name,
       round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
     from public.sales_order_items i
     join public.sales_orders o on o.id = i.order_id
@@ -350,21 +339,18 @@ as $$
       and coalesce(o.voided, false) = false
       and timezone(p_time_zone, o.created_at)::date between s.previous_from_day and s.previous_to_day
       and public.is_main_category_item(i.name, i.variant_name)
-      and i.product_id is not null
-    group by i.product_id
+    group by trim(coalesce(nullif(i.variant_name, ''), i.name, 'Unknown'))
   ),
   combined as (
     select
-      coalesce(c.product_id, p.product_id) as product_id,
       coalesce(c.name, p.name) as name,
       coalesce(c.qty, 0)::numeric as current_qty,
       coalesce(p.qty, 0)::numeric as previous_qty
     from current_items c
-    full outer join previous_items p on p.product_id = c.product_id
+    full outer join previous_items p on p.name = c.name
   ),
   ranked as (
     select
-      product_id,
       name,
       round(current_qty, 2) as current_qty,
       round(previous_qty, 2) as previous_qty,
@@ -406,7 +392,6 @@ as $$
       (
         select jsonb_agg(
           jsonb_build_object(
-            'productId', product_id,
             'name', name,
             'currentQty', current_qty,
             'previousQty', previous_qty,
@@ -425,7 +410,6 @@ as $$
       (
         select jsonb_agg(
           jsonb_build_object(
-            'productId', product_id,
             'name', name,
             'currentQty', current_qty,
             'previousQty', previous_qty,
