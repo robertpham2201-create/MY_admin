@@ -197,12 +197,16 @@ language sql
 immutable
 as $$
   with normalized as (
-    select lower(trim(regexp_replace(coalesce(p_name, '') || ' ' || coalesce(p_variant_name, ''), '\s+', ' ', 'g'))) as v
+    select
+      lower(trim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g'))) as c,
+      lower(trim(regexp_replace(coalesce(p_variant_name, '') || ' ' || coalesce(p_name, ''), '\s+', ' ', 'g'))) as v,
+      lower(trim(coalesce(nullif(p_variant_name, ''), p_name, ''))) as primary_name
   )
   select case
     when v = '' then false
-    when trim(coalesce(p_name, '')) = '' then false
-    when lower(trim(coalesce(p_name, ''))) in (
+    when trim(coalesce(p_name, '')) = '' and trim(coalesce(p_variant_name, '')) = '' then false
+    when c in ('side', 'starter', 'extra') then false
+    when primary_name in (
       'takeaway box',
       'take away box',
       'takeaway container',
@@ -313,7 +317,12 @@ as $$
   ),
   current_items as (
     select
-      trim(i.name) as name,
+      i.product_id as product_id,
+      coalesce(
+        nullif(max(trim(i.variant_name)), ''),
+        nullif(max(trim(i.name)), ''),
+        'Unknown'
+      ) as name,
       round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
     from public.sales_order_items i
     join public.sales_orders o on o.id = i.order_id
@@ -322,11 +331,17 @@ as $$
       and coalesce(o.voided, false) = false
       and timezone(p_time_zone, o.created_at)::date between s.from_day and s.to_day
       and public.is_main_category_item(i.name, i.variant_name)
-    group by trim(i.name)
+      and i.product_id is not null
+    group by i.product_id
   ),
   previous_items as (
     select
-      trim(i.name) as name,
+      i.product_id as product_id,
+      coalesce(
+        nullif(max(trim(i.variant_name)), ''),
+        nullif(max(trim(i.name)), ''),
+        'Unknown'
+      ) as name,
       round(sum(coalesce(i.quantity, 0))::numeric, 2) as qty
     from public.sales_order_items i
     join public.sales_orders o on o.id = i.order_id
@@ -335,18 +350,21 @@ as $$
       and coalesce(o.voided, false) = false
       and timezone(p_time_zone, o.created_at)::date between s.previous_from_day and s.previous_to_day
       and public.is_main_category_item(i.name, i.variant_name)
-    group by trim(i.name)
+      and i.product_id is not null
+    group by i.product_id
   ),
   combined as (
     select
+      coalesce(c.product_id, p.product_id) as product_id,
       coalesce(c.name, p.name) as name,
       coalesce(c.qty, 0)::numeric as current_qty,
       coalesce(p.qty, 0)::numeric as previous_qty
     from current_items c
-    full outer join previous_items p on p.name = c.name
+    full outer join previous_items p on p.product_id = c.product_id
   ),
   ranked as (
     select
+      product_id,
       name,
       round(current_qty, 2) as current_qty,
       round(previous_qty, 2) as previous_qty,
