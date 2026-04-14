@@ -6,8 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -21,8 +19,6 @@ type ReportPayload = {
   range: { fromDay: string; toDay: string; timeZone: string };
   totals: { revenue: number; orders: number; gst: number };
   series: Array<{ t: string; revenue: number; orders: number }>;
-  heatmap: { revenue: number[][]; orders: number[][] };
-  weekdayCompare: { this: number[]; prev: number[] };
 };
 
 function nzd(value: number) {
@@ -38,62 +34,6 @@ function isoDateLocal(d: Date) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function slotLabel(slot: number) {
-  const hour = Math.floor(slot / 2);
-  const min = slot % 2 === 0 ? "00" : "30";
-  return `${String(hour).padStart(2, "0")}:${min}`;
-}
-
-function Heatmap({ values }: { values: number[][] }) {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const max = useMemo(() => Math.max(1, ...values.flat()), [values]);
-
-  return (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <div>
-          <div className={styles.cardTitle}>Restaurant Pulse (Heatmap)</div>
-          <div className={styles.cardSub}>
-            Doanh thu theo thu trong tuan va tung khung 30 phut. Tim ra gio vang va gio chet de toi uu ca truc.
-          </div>
-        </div>
-      </div>
-      <div className={styles.heatWrap}>
-        <div className={styles.heatGrid}>
-          <div />
-          {Array.from({ length: 48 }, (_, i) => (
-            <div key={i} className={styles.heatTick}>
-              {i % 2 === 0 ? String(i / 2).padStart(2, "0") : ""}
-            </div>
-          ))}
-          {values.map((row, di) => (
-            <div key={di} style={{ display: "contents" }}>
-              <div className={styles.heatLabel}>{days[di]}</div>
-              {row.map((v, si) => {
-                const intensity = Math.min(1, v / max);
-                const bg = `rgba(15,118,110,${0.08 + intensity * 0.92})`;
-                return (
-                  <div
-                    key={si}
-                    className={styles.heatCell}
-                    style={{ background: bg }}
-                    title={`${days[di]} ${slotLabel(si)} • ${nzd(v)}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className={styles.legend}>
-        <span>Low</span>
-        <span className={styles.legendBar} />
-        <span>High</span>
-      </div>
-    </div>
-  );
 }
 
 export default function ReportPage() {
@@ -170,16 +110,6 @@ export default function ReportPage() {
     // custom
     return { fromDay: customFrom, toDay: customTo };
   }, [preset, customFrom, customTo, tz]);
-
-  const weekdayBars = useMemo(() => {
-    if (!data) return [];
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days.map((d, i) => ({
-      day: d,
-      this: data.weekdayCompare.this[i] ?? 0,
-      prev: data.weekdayCompare.prev[i] ?? 0,
-    }));
-  }, [data]);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -333,7 +263,7 @@ export default function ReportPage() {
 
         {!data && (
           <div className={styles.empty}>
-            Bam <b>Generate report</b> de xem Heatmap 30 phut, gio vang, xu huong theo thu, phan tich mon va hanh vi combo.
+            Bam <b>Generate report</b> de xem bieu do doanh thu theo tung moc 30 phut va cac chi so tong quan.
           </div>
         )}
 
@@ -386,38 +316,6 @@ export default function ReportPage() {
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#0f766e" strokeWidth={2.5} fill="url(#revFill)" />
                   </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <Heatmap values={data.heatmap.revenue} />
-
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <div className={styles.cardTitle}>Weekday Comparison</div>
-                  <div className={styles.cardSub}>
-                    So sanh doanh thu theo thu giua khoang hien tai va tuan truoc (vd Thu 7 tuan nay vs Thu 7 tuan truoc).
-                  </div>
-                </div>
-              </div>
-              <div className={styles.chartSmall}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weekdayBars}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="day" tick={{ fill: "#64748b" }} stroke="#cbd5e1" />
-                    <YAxis tick={{ fill: "#64748b" }} stroke="#cbd5e1" />
-                    <Tooltip
-                      formatter={(v: unknown) => nzd(Number(v))}
-                      contentStyle={{
-                        borderRadius: 14,
-                        border: "1px solid rgba(148,163,184,0.35)",
-                        boxShadow: "0 14px 35px rgba(15,23,42,0.14)",
-                      }}
-                    />
-                    <Bar dataKey="prev" fill="#94a3b8" name="Prev week" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="this" fill="#0f766e" name="This range" radius={[8, 8, 0, 0]} />
-                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>

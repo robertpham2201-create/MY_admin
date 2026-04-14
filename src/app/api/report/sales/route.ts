@@ -11,11 +11,6 @@ type OrderRow = {
   total_amount_after_adjustment?: number | null;
 };
 
-type OrderItemRow = {
-  order_id: number;
-  name: string | null;
-};
-
 function addDaysIso(isoDay: string, deltaDays: number): string {
   const m = isoDay.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return isoDay;
@@ -85,9 +80,6 @@ export async function GET(request: Request) {
     const fromStartUtc = DateTime.fromISO(fromDay, { zone: timeZone }).startOf("day").toUTC().toISO();
     const toEndUtc = DateTime.fromISO(toDay, { zone: timeZone }).endOf("day").toUTC().toISO();
 
-    const prevFromStartUtc = DateTime.fromISO(addDaysIso(fromDay, -7), { zone: timeZone }).startOf("day").toUTC().toISO();
-    const prevToEndUtc = DateTime.fromISO(addDaysIso(toDay, -7), { zone: timeZone }).endOf("day").toUTC().toISO();
-
     const orders = await fetchAllRows<OrderRow>((from, to) =>
       supabase
         .from("sales_orders")
@@ -97,45 +89,8 @@ export async function GET(request: Request) {
         .range(from, to)
     );
 
-    const prevOrders = await fetchAllRows<OrderRow>((from, to) =>
-      supabase
-        .from("sales_orders")
-        .select("id,created_at,total_paid,total_amount_after_adjustment")
-        .gte("created_at", prevFromStartUtc)
-        .lte("created_at", prevToEndUtc)
-        .range(from, to)
-    );
-
-    const orderIds = (orders ?? []).map((o) => o.id);
-    const orderItems: OrderItemRow[] = [];
-    if (orderIds.length) {
-      const chunkSize = 500;
-      for (let i = 0; i < orderIds.length; i += chunkSize) {
-        const chunk = orderIds.slice(i, i + chunkSize) as number[];
-        const rows = await fetchAllRows<OrderItemRow>((from, to) =>
-          supabase.from("sales_order_items").select("order_id,name").in("order_id", chunk).range(from, to)
-        );
-        orderItems.push(...rows);
-      }
-    }
-
-    // Map order_id -> [product names]
-    const namesByOrder = new Map<number, string[]>();
-    for (const row of orderItems ?? []) {
-      const orderId = row.order_id as number;
-      const name = typeof row.name === "string" ? row.name.trim() : "";
-      if (!orderId || !name) continue;
-      const list = namesByOrder.get(orderId) ?? [];
-      list.push(name);
-      namesByOrder.set(orderId, list);
-    }
-
-    // 30-minute time-series + heatmap (weekday x slot)
+    // 30-minute time-series
     const series: Array<{ t: string; revenue: number; orders: number }> = [];
-    const heat: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 48 }, () => 0));
-    const heatOrders: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 48 }, () => 0));
-    const weekdayTotals: number[] = Array.from({ length: 7 }, () => 0);
-    const weekdayTotalsPrev: number[] = Array.from({ length: 7 }, () => 0);
 
     const byKey = new Map<string, { revenue: number; orders: number }>();
     for (const it of orders ?? []) {
@@ -153,31 +108,12 @@ export async function GET(request: Request) {
       cur.revenue += revenue;
       cur.orders += 1;
       byKey.set(k, cur);
-
-      const dowSun0 = dt.weekday % 7; // luxon: 1=Mon..7=Sun, but weekday%7 gives 0 for Sun
-      const w = (dowSun0 + 6) % 7; // 0=Mon..6=Sun
-      heat[w][slot] += revenue;
-      heatOrders[w][slot] += 1;
-      weekdayTotals[w] += revenue;
     }
 
     const keysSorted = Array.from(byKey.keys()).sort();
     for (const k of keysSorted) {
       const v = byKey.get(k)!;
       series.push({ t: k, revenue: nzd(v.revenue), orders: v.orders });
-    }
-
-    for (const it of prevOrders ?? []) {
-      const createdAtIso = typeof it.created_at === "string" ? it.created_at : null;
-      if (!createdAtIso) continue;
-      const dt = DateTime.fromISO(createdAtIso, { zone: "utc" }).setZone(timeZone);
-      const dowSun0 = dt.weekday % 7;
-      const w = (dowSun0 + 6) % 7;
-      const revenue =
-        (typeof it.total_paid === "number" ? it.total_paid : 0) ||
-        (typeof it.total_amount_after_adjustment === "number" ? it.total_amount_after_adjustment : 0) ||
-        0;
-      weekdayTotalsPrev[w] += revenue;
     }
 
     return NextResponse.json({
@@ -189,11 +125,6 @@ export async function GET(request: Request) {
         gst: nzd((orders ?? []).reduce((s, it) => s + (typeof it.total_gst === "number" ? it.total_gst : 0), 0)),
       },
       series,
-      heatmap: { revenue: heat.map((r) => r.map(nzd)), orders: heatOrders },
-      weekdayCompare: {
-        this: weekdayTotals.map(nzd),
-        prev: weekdayTotalsPrev.map(nzd),
-      },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
