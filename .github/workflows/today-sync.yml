@@ -1,0 +1,41 @@
+name: Today sync (NZ 2pm/5pm/9pm)
+
+on:
+  schedule:
+    # GitHub Actions schedule uses UTC.
+    # Pacific/Auckland is UTC+12 (NZST) or UTC+13 (NZDT).
+    # 14:00 NZ = 02:00 UTC (NZST) or 01:00 UTC (NZDT)
+    # 17:00 NZ = 05:00 UTC (NZST) or 04:00 UTC (NZDT)
+    # 21:00 NZ = 09:00 UTC (NZST) or 08:00 UTC (NZDT)
+    # Run both sets to cover DST automatically. Upsert makes duplicates safe.
+    - cron: "5 1 * * *"
+    - cron: "5 2 * * *"
+    - cron: "5 4 * * *"
+    - cron: "5 5 * * *"
+    - cron: "5 8 * * *"
+    - cron: "5 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Call sync-today endpoint
+        env:
+          CRON_URL_TODAY: ${{ secrets.CRON_URL_TODAY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_URL_TODAY" ]; then
+            echo "Missing secrets.CRON_URL_TODAY"
+            exit 1
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing secrets.CRON_SECRET"
+            exit 1
+          fi
+          curl -sS -X POST "$CRON_URL_TODAY" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "content-type: application/json" \
+            --data '{}' \
+            --fail-with-body
