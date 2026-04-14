@@ -8,11 +8,8 @@ on:
     # 17:00 NZ = 05:00 UTC (NZST) or 04:00 UTC (NZDT)
     # 21:00 NZ = 09:00 UTC (NZST) or 08:00 UTC (NZDT)
     # Run both sets to cover DST automatically. Upsert makes duplicates safe.
-    - cron: "5 1 * * *"
     - cron: "5 2 * * *"
-    - cron: "5 4 * * *"
     - cron: "5 5 * * *"
-    - cron: "5 8 * * *"
     - cron: "5 9 * * *"
   workflow_dispatch: {}
 
