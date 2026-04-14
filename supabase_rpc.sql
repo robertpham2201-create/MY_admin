@@ -387,15 +387,15 @@ as $$
     select *
     from ranked
     where delta_qty > 0
-    order by coalesce(delta_pct, 999999) desc, delta_qty desc, name asc
-    limit 10
+    order by delta_qty desc, name asc
+    limit 15
   ),
   slowest as (
     select *
     from ranked
     where delta_qty < 0
-    order by coalesce(delta_pct, -100) asc, delta_qty asc, name asc
-    limit 10
+    order by delta_qty asc, name asc
+    limit 15
   )
   select jsonb_build_object(
     'filterScope', 'main_only',
@@ -413,7 +413,7 @@ as $$
             'deltaPct', delta_pct,
             'status', status
           )
-          order by coalesce(delta_pct, 999999) desc, delta_qty desc, name asc
+          order by delta_qty desc, name asc
         )
         from fastest
       ),
@@ -431,7 +431,7 @@ as $$
             'deltaPct', delta_pct,
             'status', status
           )
-          order by coalesce(delta_pct, -100) asc, delta_qty asc, name asc
+          order by delta_qty asc, name asc
         )
         from slowest
       ),
