@@ -60,8 +60,8 @@ export default function LoginClient() {
 
         <section className="relative flex w-full items-center justify-center bg-[#f8f9fa] lg:w-2/5">
           <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-[999px] bg-[#006948]/5" />
-          <div className="w-full max-w-md px-8 py-12">
-            <div className="mb-14">
+          <div className="w-full max-w-md px-8 py-14">
+            <div className="mb-10">
               <div className="mb-5 inline-flex rounded-full bg-[#f3f4f5] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#3d4a42]">
                 Staff Login
               </div>
@@ -76,17 +76,17 @@ export default function LoginClient() {
               </p>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-7">
               <div className="space-y-2">
                 <label className="ml-1 block text-xs font-bold uppercase tracking-[0.22em] text-[#3d4a42]" htmlFor="access-code">
                   Access Code
                 </label>
                 <div className="group relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#6d7a72]">
+                  <div className="pointer-events-none absolute inset-y-0 left-5 flex items-center text-[#6d7a72]">
                     <svg
                       aria-hidden="true"
                       viewBox="0 0 24 24"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -102,7 +102,7 @@ export default function LoginClient() {
                   </div>
                   <input
                     id="access-code"
-                    className="w-full rounded-xl border-b-2 border-b-transparent bg-[#f3f4f5] py-4 pl-12 pr-4 text-[#191c1d] shadow-sm outline-none transition-all duration-300 placeholder:text-[#6d7a72]/60 focus:border-b-[#006948] focus:bg-white"
+                    className="w-full rounded-xl border-b-2 border-b-transparent bg-[#f3f4f5] py-4 pl-14 pr-4 text-[#191c1d] shadow-sm outline-none transition-all duration-300 placeholder:text-[#6d7a72]/60 focus:border-b-[#006948] focus:bg-white"
                     type="password"
                     placeholder=".... ...."
                     value={apiKey}
@@ -132,7 +132,7 @@ export default function LoginClient() {
               </div>
             </div>
 
-            <div className="mt-16 flex items-center justify-between border-t border-[#bccac0]/15 pt-8">
+            <div className="mt-12 flex items-center justify-between border-t border-[#bccac0]/15 pt-8">
               <div>
                 <p className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#6d7a72]">System Status</p>
                 <div className="mt-1 flex items-center gap-2">
