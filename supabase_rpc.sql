@@ -406,6 +406,7 @@ as $$
       (
         select jsonb_agg(
           jsonb_build_object(
+            'productId', product_id,
             'name', name,
             'currentQty', current_qty,
             'previousQty', previous_qty,
@@ -424,6 +425,7 @@ as $$
       (
         select jsonb_agg(
           jsonb_build_object(
+            'productId', product_id,
             'name', name,
             'currentQty', current_qty,
             'previousQty', previous_qty,

@@ -21,6 +21,7 @@ type GoodsMomentumRpc = {
   currentLabel: string;
   previousLabel: string;
   fastest: Array<{
+    productId?: number;
     name: string;
     currentQty: number;
     previousQty: number;
@@ -29,6 +30,7 @@ type GoodsMomentumRpc = {
     status: "up" | "down" | "new" | "dropped";
   }>;
   slowest: Array<{
+    productId?: number;
     name: string;
     currentQty: number;
     previousQty: number;
