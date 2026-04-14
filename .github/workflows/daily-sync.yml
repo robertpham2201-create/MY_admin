@@ -6,7 +6,6 @@ on:
     # Pacific/Auckland is UTC+12 (NZST) or UTC+13 (NZDT), so 02:00 local is 13:00 or 14:00 UTC.
     # We run twice to cover DST automatically. Upsert makes it safe if both hit.
     - cron: "5 13 * * *"
-    - cron: "5 14 * * *"
   workflow_dispatch: {}
 
 jobs:
