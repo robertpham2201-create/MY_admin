@@ -117,7 +117,7 @@ export default function ReportPage() {
     }
     if (preset === "this_month") {
       const s = now.startOf("month");
-      const e = now.endOf("month").startOf("day");
+      const e = now.startOf("day");
       return { fromDay: s.toISODate()!, toDay: e.toISODate()! };
     }
     if (preset === "last_month") {
