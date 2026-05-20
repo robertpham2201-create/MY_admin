@@ -15,7 +15,7 @@ function requireEnv(name: string): string {
   return v;
 }
 
-function parseDmyAmPmToUtcIso(s: unknown): string | null {
+function parseDmyAmPmToUtcIso(s: unknown, zone = "Pacific/Auckland"): string | null {
   if (typeof s !== "string") return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}) (AM|PM)$/);
   if (!m) return null;
@@ -29,7 +29,7 @@ function parseDmyAmPmToUtcIso(s: unknown): string | null {
   if (ap === "AM" && hh === 12) hh = 0;
   const dt = DateTime.fromObject(
     { year: yyyy, month: mm, day: dd, hour: hh, minute: min, second: 0, millisecond: 0 },
-    { zone: "Pacific/Auckland" }
+    { zone }
   );
   if (!dt.isValid) return null;
   return dt.toUTC().toISO();
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         if (Array.isArray(enriched.Products)) {
           enriched.Products = enriched.Products.map((p) => {
             if (!isRecord(p) || !isRecord(p.Product)) return p;
-            return { ...p, Product: { ...(p.Product as AnyRecord), created_at: parseDmyAmPmToUtcIso((p.Product as AnyRecord).CreatedOn) } };
+            return { ...p, Product: { ...(p.Product as AnyRecord), created_at: parseDmyAmPmToUtcIso((p.Product as AnyRecord).CreatedOn, "utc") } };
           });
         }
         if (Array.isArray(enriched.Transactions)) {
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
             line_id: lineId,
             order_id: orderId,
             provider: providerName,
-            created_at: parseDmyAmPmToUtcIso(prod.CreatedOn),
+            created_at: parseDmyAmPmToUtcIso(prod.CreatedOn, "utc"),
             product_id: intOrNull(prod.ProductId),
             name: textOrNull(prod.name),
             quantity: num(prod.Quantity),

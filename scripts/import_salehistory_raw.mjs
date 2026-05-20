@@ -14,7 +14,7 @@ function isRecord(v) {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function parseDmyAmPm(s) {
+function parseDmyAmPm(s, zone = "Pacific/Auckland") {
   // "10/04/2026 02:20 PM" -> ISO timestamp, parsed in Pacific/Auckland
   if (typeof s !== "string") return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}) (AM|PM)$/);
@@ -29,7 +29,7 @@ function parseDmyAmPm(s) {
   if (ap === "AM" && hh === 12) hh = 0;
   const dt = DateTime.fromObject(
     { year: yyyy, month: mm, day: dd, hour: hh, minute: min, second: 0, millisecond: 0 },
-    { zone: "Pacific/Auckland" }
+    { zone }
   );
   if (!dt.isValid) return null;
   return dt.toUTC().toISO();
@@ -114,7 +114,7 @@ async function main() {
           line_id: lineId,
           order_id: orderId,
           provider,
-          created_at: toIso(parseDmyAmPm(prod.CreatedOn)),
+          created_at: toIso(parseDmyAmPm(prod.CreatedOn, "utc")),
           product_id: intOrNull(prod.ProductId),
           name: textOrNull(prod.name),
           quantity: num(prod.Quantity),
@@ -182,7 +182,7 @@ async function main() {
             if (!isRecord(p) || !isRecord(p.Product)) return p;
             return {
               ...p,
-              Product: { ...p.Product, created_at: toIso(parseDmyAmPm(p.Product.CreatedOn)) },
+              Product: { ...p.Product, created_at: toIso(parseDmyAmPm(p.Product.CreatedOn, "utc")) },
             };
           })
         : it.Products,

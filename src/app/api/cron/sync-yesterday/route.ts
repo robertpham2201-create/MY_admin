@@ -121,7 +121,7 @@ function numOrNull(v: unknown) {
   return null;
 }
 
-function parseDmyAmPmToUtcIso(s: unknown): string | null {
+function parseDmyAmPmToUtcIso(s: unknown, zone = TIME_ZONE): string | null {
   if (typeof s !== "string") return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}) (AM|PM)$/);
   if (!m) return null;
@@ -133,7 +133,7 @@ function parseDmyAmPmToUtcIso(s: unknown): string | null {
   const ap = m[6];
   if (ap === "PM" && hh !== 12) hh += 12;
   if (ap === "AM" && hh === 12) hh = 0;
-  return DateTime.fromObject({ year: yyyy, month: mm, day: dd, hour: hh, minute: min, second: 0 }, { zone: TIME_ZONE })
+  return DateTime.fromObject({ year: yyyy, month: mm, day: dd, hour: hh, minute: min, second: 0 }, { zone })
     .toUTC()
     .toISO({ suppressMilliseconds: true });
 }
@@ -204,7 +204,7 @@ async function importToSupabase(items: unknown[], provider: string) {
           line_id: lineId,
           order_id: orderId,
           provider,
-          created_at: parseDmyAmPmToUtcIso(prod["CreatedOn"]),
+          created_at: parseDmyAmPmToUtcIso(prod["CreatedOn"], "utc"),
           product_id: intOrNull(prod["ProductId"]),
           name: textOrNull(prod["name"]),
           quantity: numOrNull(prod["Quantity"]),
