@@ -66,7 +66,7 @@ export default function LoginClient() {
           {/* Top corner gradient accent */}
           <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-[#c5a880]/5 blur-3xl pointer-events-none" />
 
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md rounded-3xl border border-[#c5a880]/15 bg-black/45 p-8 sm:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
             {/* Header info */}
             <div className="mb-10 flex flex-col items-start">
               <Link 
