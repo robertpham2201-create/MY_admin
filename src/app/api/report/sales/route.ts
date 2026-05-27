@@ -81,13 +81,15 @@ export async function GET(request: Request) {
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
     const [{ data: summaryData, error: summaryError }, { data: momentumData, error: momentumError }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any).rpc("report_sales_summary", {
         p_from_day: fromDay,
         p_to_day: toDay,
         p_time_zone: timeZone,
       }),
       rangeDays >= 7
-        ? (supabase as any).rpc("report_goods_momentum", {
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any).rpc("report_goods_momentum", {
             p_from_day: fromDay,
             p_to_day: toDay,
             p_time_zone: timeZone,

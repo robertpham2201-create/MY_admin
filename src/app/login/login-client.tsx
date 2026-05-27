@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { Inter, Manrope } from "next/font/google";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -51,10 +53,13 @@ export default function LoginClient() {
       <main className="flex min-h-screen">
         {/* Left Side Hero Image (visible on desktop) */}
         <section className="relative hidden overflow-hidden lg:block lg:w-3/5">
-          <img
+          <Image
             alt="Madam Yen restaurant interior"
             src="/login-hero.png"
-            className="absolute inset-0 h-full w-full object-cover grayscale-[20%] brightness-[70%] transition-transform duration-[10000ms] hover:scale-105"
+            priority
+            fill
+            sizes="60vw"
+            className="object-cover grayscale-[20%] brightness-[70%] transition-transform duration-[10000ms] hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#030c08]/20 to-[#030c08]" />
           <div className="absolute bottom-16 left-16 max-w-lg">
@@ -81,12 +86,12 @@ export default function LoginClient() {
           <div className="w-full max-w-md">
             {/* Header info */}
             <div className="mb-10">
-              <a 
+              <Link 
                 href="/"
                 className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
               >
                 <span>&larr;</span> Back to Portal
-              </a>
+              </Link>
               <div className="mb-4 inline-flex rounded-full bg-emerald-500/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
                 Staff Authorization
               </div>
@@ -102,7 +107,13 @@ export default function LoginClient() {
             </div>
 
             {/* Input Access Code */}
-            <div className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                submit();
+              }} 
+              className="space-y-6"
+            >
               <div className="space-y-2.5">
                 <label 
                   className="block text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400" 
@@ -130,12 +141,11 @@ export default function LoginClient() {
                     id="access-code"
                     className="w-full rounded-xl border border-white/5 bg-white/[0.03] py-4 pl-14 pr-4 text-white shadow-inner outline-none transition-all duration-300 placeholder:text-slate-500/60 focus:border-emerald-500/30 focus:bg-white/[0.06] focus:ring-4 focus:ring-emerald-500/5"
                     type="password"
+                    name="password"
+                    autoComplete="current-password"
                     placeholder="Enter access code"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && apiKey) submit();
-                    }}
                   />
                 </div>
               </div>
@@ -153,7 +163,7 @@ export default function LoginClient() {
               {/* Submit Button */}
               <div className="pt-2">
                 <button
-                  onClick={submit}
+                  type="submit"
                   disabled={loading || !apiKey}
                   className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-4 text-sm font-bold tracking-tight text-white shadow-[0_12px_24px_rgba(16,185,129,0.15)] transition-all duration-300 hover:from-emerald-500 hover:to-emerald-400 hover:shadow-[0_12px_32px_rgba(16,185,129,0.25)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -161,7 +171,7 @@ export default function LoginClient() {
                   <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </div>
-            </div>
+            </form>
 
             {/* Footer status */}
             <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-8 text-[11px]">

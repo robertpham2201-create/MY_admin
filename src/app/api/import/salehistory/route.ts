@@ -49,6 +49,7 @@ function textOrNull(v: unknown): string | null {
 
 async function upsertBatches(
   // Keep this `any` to avoid supabase-js generic inference issues in Next.js build.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   table: string,
   rows: AnyRecord[],
@@ -58,6 +59,7 @@ async function upsertBatches(
   for (let i = 0; i < rows.length; i += batchSize) {
     const slice = rows.slice(i, i + batchSize);
     // supabase-js typing can infer `never` for dynamic table names; runtime is fine.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from(table).upsert(slice as any, { onConflict });
     if (error) throw new Error(`${table} upsert failed: ${error.message}`);
   }

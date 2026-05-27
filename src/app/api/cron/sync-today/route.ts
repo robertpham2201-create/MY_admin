@@ -147,6 +147,7 @@ function parseDmyAmPmToUtcIso(s: unknown, zone = TIME_ZONE): string | null {
 
 async function upsertBatches(
   // Keep this `any` to avoid supabase-js generic inference issues in Next.js build.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   table: string,
   rows: AnyRecord[],
@@ -155,6 +156,7 @@ async function upsertBatches(
 ) {
   for (let i = 0; i < rows.length; i += batchSize) {
     const chunk = rows.slice(i, i + batchSize);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from(table).upsert(chunk as any, { onConflict: conflictTarget });
     if (error) throw new Error(`${table} upsert failed: ${error.message}`);
   }

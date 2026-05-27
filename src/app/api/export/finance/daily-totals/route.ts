@@ -50,6 +50,7 @@ export async function GET(request: Request) {
     const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).rpc("finance_daily_totals", {
       p_from_day: fromDay,
       p_to_day: toDay,
