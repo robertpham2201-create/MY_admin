@@ -7,7 +7,7 @@ export default function Home() {
         <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-[#004f36]/15 blur-[100px]" />
       </div>
 
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[24px_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-10 md:p-12">
+      <div className="relative w-full max-w-2xl shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[24px_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-10 md:p-12">
         <div className="mb-10 text-center">
           <div className="mx-auto mb-4 inline-flex items-center justify-center rounded-full bg-emerald-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-400">
             Internal Portal
