@@ -66,16 +66,23 @@ export default function LoginClient() {
           {/* Top corner gradient accent */}
           <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-[#c5a880]/5 blur-3xl pointer-events-none" />
 
-          <div className="w-full max-w-md rounded-3xl border border-[#c5a880]/15 bg-black/45 p-8 sm:p-10 shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+          <div 
+            className="w-full max-w-md rounded-3xl border border-[#c5a880]/15 bg-black/45 shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+            style={{ padding: "40px" }}
+          >
             {/* Header info */}
-            <div className="mb-10 flex flex-col items-start">
+            <div 
+              className="mb-10"
+              style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "10px" }}
+            >
               <Link 
                 href="/"
-                className="mb-6 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#c5a880] hover:text-[#d5b890] transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#c5a880] hover:text-[#d5b890] transition-colors"
+                style={{ marginBottom: "16px" }}
               >
                 <span>&larr;</span> Back to Portal
               </Link>
-              <div className="mb-4 inline-flex rounded-full border border-[#c5a880]/20 bg-[#c5a880]/5 px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.25em] text-[#c5a880]">
+              <div className="inline-flex rounded-full border border-[#c5a880]/20 bg-[#c5a880]/5 px-3.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.25em] text-[#c5a880]" style={{ marginBottom: "12px" }}>
                 Staff Authorization
               </div>
               <h1 className="font-serif text-4xl font-light tracking-[0.08em] text-white">
@@ -93,6 +100,7 @@ export default function LoginClient() {
                 submit();
               }} 
               className="space-y-6"
+              style={{ display: "flex", flexDirection: "column", gap: "24px" }}
             >
               <div className="space-y-2.5">
                 <label 
@@ -154,7 +162,10 @@ export default function LoginClient() {
             </form>
 
             {/* Footer status */}
-            <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-8 text-[11px]">
+            <div 
+              className="text-[11px]"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "32px", marginTop: "40px" }}
+            >
               <div>
                 <p className="font-bold uppercase tracking-[0.2em] text-slate-500">System Status</p>
                 <div className="mt-2.5 flex items-center gap-1.5">
